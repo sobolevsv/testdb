@@ -46,7 +46,7 @@ int csvParser(const std::string &body) {
     pos = parseLine(pos, end, fields);
     ++pos;
 
-    std::vector< std::vector<char>> columnStream(fields.size());
+    std::vector< std::vector<char>> columnsData(fields.size());
 
     std::ofstream outfile ("data/column.txt",std::ofstream::binary);
     for(auto col : fields) {
@@ -62,8 +62,10 @@ int csvParser(const std::string &body) {
     while(pos < end) {
         pos = parseLine(pos, end, fields);
 
-        for(int i = 0; i < fields.size() && i < columnStream.size(); i++) {
-            columnStream[i].insert(columnStream[i].end(), fields[i].start, fields[i].start +  fields[i].size);
+        for(int i = 0; i < fields.size() && i < columnsData.size(); i++) {
+            auto &field = fields[i];
+            auto &column = columnsData[i];
+            column.insert(column.end(), field.start, field.start + field.size);
         }
 
         fields.clear();
@@ -74,10 +76,10 @@ int csvParser(const std::string &body) {
     for(int i = 0; i < columnsName.size(); i++) {
         std::string fileName = "data/" + columnsName[i];
         std::ofstream colFile(fileName, std::ofstream::binary);
-        colFile.write(&columnStream[i][0], columnStream[i].size());
+        colFile.write(&columnsData[i][0], columnsData[i].size());
     }
 
-    std::ofstream countfile ("data/count.txt",std::ofstream::binary);
-    countfile << count;
+    std::ofstream countFile ("data/count.txt", std::ofstream::binary);
+    countFile << count;
     return count;
 }
