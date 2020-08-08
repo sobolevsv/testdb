@@ -4,16 +4,16 @@
 #include <vector>
 #include <sstream>
 
-struct Cell {
+struct Field {
     const char * start;
     int size;
 };
 
-using fields_t = std::vector<Cell>;
+using fields_t = std::vector<Field>;
 
 const char* parseLine(const char* begin, const char* end, fields_t &fields) {
 
-    Cell cell {nullptr, 0};
+    Field cell {nullptr, 0};
 
     while(begin != end) {
         if(*begin == '\n') {
@@ -40,36 +40,29 @@ int csvParser(const std::string &body) {
     auto pos = body.c_str();
     auto end = pos + body.size();
 
-    fields_t columnsName;
+    fields_t fields;
+    std::vector<std::string> columnsName;
 
-    pos = parseLine(pos, end, columnsName);
+    pos = parseLine(pos, end, fields);
     ++pos;
 
-    std::vector< std::shared_ptr<std::ofstream>> columnFiles;
-    std::vector< std::vector<char>> columnStream;
+    std::vector< std::vector<char>> columnStream(fields.size());
 
     std::ofstream outfile ("data/column.txt",std::ofstream::binary);
-    for(auto col : columnsName) {
-        outfile.write(col.start, col.size);
-        outfile.put('\n');
-        std::string fileName(col.start, col.size);
-        fileName = "data/" + fileName;
-        columnFiles.push_back( std::make_shared<std::ofstream>(fileName, std::ofstream::binary));
-        columnStream.push_back( std::vector<char>());
+    for(auto col : fields) {
+        std::string colName(col.start, col.size);
+        columnsName.push_back(colName);
+        outfile << colName << '\n';
     }
-    outfile.close();
 
-    fields_t fields;
+    fields.clear();
 
     int count = 0;
 
     while(pos < end) {
         pos = parseLine(pos, end, fields);
 
-        for(int i = 0; i < fields.size(); i++) {
-//            columnFiles[i]->write(fields[i].start, fields[i].size);
-            //columnFiles[i]->put('\n');
-
+        for(int i = 0; i < fields.size() && i < columnStream.size(); i++) {
             columnStream[i].insert(columnStream[i].end(), fields[i].start, fields[i].start +  fields[i].size);
         }
 
@@ -79,9 +72,9 @@ int csvParser(const std::string &body) {
     }
 
     for(int i = 0; i < columnsName.size(); i++) {
-        columnFiles[i]->write(&columnStream[i][0], columnStream[i].size());
-
-        //columnStream[i]->insert(columnStream[i]->end(), fields[i].start, fields[i].start +  fields[i].size);
+        std::string fileName = "data/" + columnsName[i];
+        std::ofstream colFile(fileName, std::ofstream::binary);
+        colFile.write(&columnStream[i][0], columnStream[i].size());
     }
 
     std::ofstream countfile ("data/count.txt",std::ofstream::binary);
