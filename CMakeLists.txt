@@ -3,7 +3,7 @@ project(columndb)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(columndb main.cpp Server/Server.cpp Server/Server.h)
+add_executable(columndb main.cpp Server/Server.cpp Server/Server.h Server/csvparser.h)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
