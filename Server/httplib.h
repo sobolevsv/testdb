@@ -3351,14 +3351,14 @@ inline std::pair<std::string, std::string> make_digest_authentication_header(
                  ":" + qop + ":" + H(A2));
   }
 
-  auto Cell = "Digest username=\"" + username + "\", realm=\"" +
+  auto field = "Digest username=\"" + username + "\", realm=\"" +
                auth.at("realm") + "\", nonce=\"" + auth.at("nonce") +
                "\", uri=\"" + req.path + "\", algorithm=" + algo +
                ", qop=" + qop + ", nc=\"" + nc + "\", cnonce=\"" + cnonce +
                "\", response=\"" + response + "\"";
 
   auto key = is_proxy ? "Proxy-Authorization" : "Authorization";
-  return std::make_pair(key, Cell);
+  return std::make_pair(key, field);
 }
 #endif
 
@@ -5831,7 +5831,7 @@ inline bool SSLClient::verify_host(X509 *server_cert) const {
 
      If a subjectAltName extension of type dNSName is present, that MUST
      be used as the identity. Otherwise, the (most specific) Common Name
-     Cell in the Subject Cell of the certificate MUST be used. Although
+     field in the Subject field of the certificate MUST be used. Although
      the use of the Common Name is existing practice, it is deprecated and
      Certification Authorities are encouraged to use the dNSName instead.
 
