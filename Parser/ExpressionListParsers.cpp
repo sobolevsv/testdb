@@ -514,6 +514,14 @@ ParserExpressionWithOptionalAlias::ParserExpressionWithOptionalAlias(bool allow_
 }
 
 
+bool ParserSelectExpression::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+{
+    return ParserList(
+            std::make_unique<ParserExpressionElement>(),
+            std::make_unique<ParserToken>(TokenType::Comma))
+            .parse(pos, node, expected);
+}
+
 
 bool ParserExpressionList::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {

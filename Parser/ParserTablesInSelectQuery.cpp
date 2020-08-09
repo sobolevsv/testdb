@@ -1,15 +1,13 @@
-#include <Parsers/CommonParsers.h>
-#include <Parsers/ExpressionElementParsers.h>
-#include <Parsers/ExpressionListParsers.h>
-#include <Parsers/ASTFunction.h>
-#include <Parsers/ASTTablesInSelectQuery.h>
-#include <Parsers/ParserSelectQuery.h>
-#include <Parsers/ParserSampleRatio.h>
-#include <Parsers/ParserTablesInSelectQuery.h>
+#include "CommonParsers.h"
+#include "ExpressionElementParsers.h"
+#include "ExpressionListParsers.h"
+//#include <Parsers/ASTFunction.h>
+#include "ASTTablesInSelectQuery.h"
+#include "ParserSelectQuery.h"
+//#include <Parsers/ParserSampleRatio.h>
+#include "ParserTablesInSelectQuery.h"
 
 
-namespace DB
-{
 
 namespace ErrorCodes
 {
@@ -21,30 +19,31 @@ bool ParserTableExpression::parseImpl(Pos & pos, ASTPtr & node, Expected & expec
 {
     auto res = std::make_shared<ASTTableExpression>();
 
-    if (!ParserWithOptionalAlias(std::make_unique<ParserSubquery>(), true).parse(pos, res->subquery, expected)
-        && !ParserWithOptionalAlias(std::make_unique<ParserFunction>(), true).parse(pos, res->table_function, expected)
-        && !ParserWithOptionalAlias(std::make_unique<ParserCompoundIdentifier>(), true).parse(pos, res->database_and_table_name, expected))
+    if (
+//            !ParserWithOptionalAlias(std::make_unique<ParserSubquery>(), true).parse(pos, res->subquery, expected)
+//        && !ParserWithOptionalAlias(std::make_unique<ParserFunction>(), true).parse(pos, res->table_function, expected)
+        !ParserWithOptionalAlias(std::make_unique<ParserCompoundIdentifier>(), true).parse(pos, res->database_and_table_name, expected))
         return false;
 
-    /// FINAL
-    if (ParserKeyword("FINAL").ignore(pos, expected))
-        res->final = true;
-
-    /// SAMPLE number
-    if (ParserKeyword("SAMPLE").ignore(pos, expected))
-    {
-        ParserSampleRatio ratio;
-
-        if (!ratio.parse(pos, res->sample_size, expected))
-            return false;
-
-        /// OFFSET number
-        if (ParserKeyword("OFFSET").ignore(pos, expected))
-        {
-            if (!ratio.parse(pos, res->sample_offset, expected))
-                return false;
-        }
-    }
+//    /// FINAL
+//    if (ParserKeyword("FINAL").ignore(pos, expected))
+//        res->final = true;
+//
+//    /// SAMPLE number
+//    if (ParserKeyword("SAMPLE").ignore(pos, expected))
+//    {
+//        ParserSampleRatio ratio;
+//
+//        if (!ratio.parse(pos, res->sample_size, expected))
+//            return false;
+//
+//        /// OFFSET number
+//        if (ParserKeyword("OFFSET").ignore(pos, expected))
+//        {
+//            if (!ratio.parse(pos, res->sample_offset, expected))
+//                return false;
+//        }
+//    }
 
     if (res->database_and_table_name)
         res->children.emplace_back(res->database_and_table_name);
@@ -187,11 +186,11 @@ bool ParserTablesInSelectQueryElement::parseImpl(Pos & pos, ASTPtr & node, Expec
 
             if (table_join->strictness != ASTTableJoin::Strictness::Unspecified
                 && table_join->kind == ASTTableJoin::Kind::Cross)
-                throw Exception("You must not specify ANY or ALL for CROSS JOIN.", ErrorCodes::SYNTAX_ERROR);
+                throw Exception("You must not specify ANY or ALL for CROSS JOIN.");
 
             if ((table_join->strictness == ASTTableJoin::Strictness::Semi || table_join->strictness == ASTTableJoin::Strictness::Anti) &&
                 (table_join->kind != ASTTableJoin::Kind::Left && table_join->kind != ASTTableJoin::Kind::Right))
-                throw Exception("SEMI|ANTI JOIN should be LEFT or RIGHT.", ErrorCodes::SYNTAX_ERROR);
+                throw Exception("SEMI|ANTI JOIN should be LEFT or RIGHT.");
 
             if (!ParserKeyword("JOIN").ignore(pos, expected))
                 return false;
@@ -270,4 +269,3 @@ bool ParserTablesInSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & e
     return true;
 }
 
-}

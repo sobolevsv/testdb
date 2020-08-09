@@ -344,8 +344,17 @@ protected:
     bool parseImpl(Pos &pos, ASTPtr &node, Expected &expected) override;
 };
 
+class ParserSelectExpression : public IParserBase {
+protected:
+    const char *getName() const override { return "select expression"; }
+
+    bool parseImpl(Pos &pos, ASTPtr &node, Expected &expected) override;
+};
+
+
 
 using ParserExpression = ParserLambdaExpression;
+//using ParserExpression = ParserSelectExpression;
 
 
 class ParserExpressionWithOptionalAlias : public IParserBase {

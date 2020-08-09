@@ -12,7 +12,7 @@
 #include "ASTExpressionList.h"
 #include "ASTFunction.h"
 #include "ASTIdentifier.h"
-//#include <Parsers/ASTLiteral.h>
+#include "ASTLiteral.h"
 //#include <Parsers/ASTAsterisk.h>
 //#include <Parsers/ASTQualifiedAsterisk.h>
 //#include <Parsers/ASTQueryParameter.h>
@@ -129,142 +129,129 @@ bool ParserIdentifier::parseImpl(Pos & pos, ASTPtr & node, Expected &)
 
     return false;
 }
-//
-//
-//bool ParserCompoundIdentifier::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
-//{
-//    ASTPtr id_list;
-//    if (!ParserList(std::make_unique<ParserIdentifier>(), std::make_unique<ParserToken>(TokenType::Dot), false)
-//        .parse(pos, id_list, expected))
-//        return false;
-//
-//    String name;
-//    std::vector<String> parts;
-//    const auto & list = id_list->as<ASTExpressionList &>();
-//    for (const auto & child : list.children)
-//    {
-//        if (!name.empty())
-//            name += '.';
-//        parts.emplace_back(getIdentifierName(child));
-//        name += parts.back();
-//    }
-//
-//    ParserKeyword s_uuid("UUID");
-//    UUID uuid = UUIDHelpers::Nil;
-//
-//    if (table_name_with_optional_uuid && parts.size() <= 2 && s_uuid.ignore(pos, expected))
-//    {
-//        ParserStringLiteral uuid_p;
-//        ASTPtr ast_uuid;
-//        if (!uuid_p.parse(pos, ast_uuid, expected))
-//            return false;
-//        uuid = parseFromString<UUID>(ast_uuid->as<ASTLiteral>()->value.get<String>());
-//    }
-//
-//    if (parts.size() == 1)
-//        parts.clear();
-//    node = std::make_shared<ASTIdentifier>(name, std::move(parts));
-//    node->as<ASTIdentifier>()->uuid = uuid;
-//
-//    return true;
-//}
+
+
+bool ParserCompoundIdentifier::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+{
+    ASTPtr id_list;
+    if (!ParserList(std::make_unique<ParserIdentifier>(), std::make_unique<ParserToken>(TokenType::Dot), false)
+        .parse(pos, id_list, expected))
+        return false;
+
+    String name;
+    std::vector<String> parts;
+    const auto & list = id_list->as<ASTExpressionList &>();
+    for (const auto & child : list.children)
+    {
+        if (!name.empty())
+            name += '.';
+        parts.emplace_back(getIdentifierName(child));
+        name += parts.back();
+    }
+
+
+    if (parts.size() == 1)
+        parts.clear();
+    node = std::make_shared<ASTIdentifier>(name, std::move(parts));
+
+    return true;
+}
 
 
 bool ParserFunction::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
-//    ParserIdentifier id_parser;
-//    ParserKeyword distinct("DISTINCT");
-//    ParserExpressionList contents(false);
-//
-//    bool has_distinct_modifier = false;
-//
-//    ASTPtr identifier;
-//    ASTPtr expr_list_args;
-//    ASTPtr expr_list_params;
-//
-//    if (!id_parser.parse(pos, identifier, expected))
-//        return false;
-//
-//    if (pos->type != TokenType::OpeningRoundBracket)
-//        return false;
-//    ++pos;
-//
-//    if (distinct.ignore(pos, expected))
-//        has_distinct_modifier = true;
-//
-//    const char * contents_begin = pos->begin;
-//    if (!contents.parse(pos, expr_list_args, expected))
-//        return false;
-//    const char * contents_end = pos->begin;
-//
-//    if (pos->type != TokenType::ClosingRoundBracket)
-//        return false;
-//    ++pos;
-//
-//    /** Check for a common error case - often due to the complexity of quoting command-line arguments,
-//      *  an expression of the form toDate(2014-01-01) appears in the query instead of toDate('2014-01-01').
-//      * If you do not report that the first option is an error, then the argument will be interpreted as 2014 - 01 - 01 - some number,
-//      *  and the query silently returns an unexpected result.
-//      */
-//    if (getIdentifierName(identifier) == "toDate"
-//        && contents_end - contents_begin == strlen("2014-01-01")
-//        && contents_begin[0] >= '2' && contents_begin[0] <= '3'
-//        && contents_begin[1] >= '0' && contents_begin[1] <= '9'
-//        && contents_begin[2] >= '0' && contents_begin[2] <= '9'
-//        && contents_begin[3] >= '0' && contents_begin[3] <= '9'
-//        && contents_begin[4] == '-'
-//        && contents_begin[5] >= '0' && contents_begin[5] <= '9'
-//        && contents_begin[6] >= '0' && contents_begin[6] <= '9'
-//        && contents_begin[7] == '-'
-//        && contents_begin[8] >= '0' && contents_begin[8] <= '9'
-//        && contents_begin[9] >= '0' && contents_begin[9] <= '9')
-//    {
-//        std::string contents_str(contents_begin, contents_end - contents_begin);
-//        throw Exception("Argument of function toDate is unquoted: toDate(" + contents_str + "), must be: toDate('" + contents_str + "')"
-//            , ErrorCodes::SYNTAX_ERROR);
-//    }
-//
-//    /// The parametric aggregate function has two lists (parameters and arguments) in parentheses. Example: quantile(0.9)(x).
-//    if (allow_function_parameters && pos->type == TokenType::OpeningRoundBracket)
-//    {
-//        ++pos;
-//
-//        /// Parametric aggregate functions cannot have DISTINCT in parameters list.
-//        if (has_distinct_modifier)
-//            return false;
-//
-//        expr_list_params = expr_list_args;
-//        expr_list_args = nullptr;
-//
-//        if (distinct.ignore(pos, expected))
-//            has_distinct_modifier = true;
-//
-//        if (!contents.parse(pos, expr_list_args, expected))
-//            return false;
-//
-//        if (pos->type != TokenType::ClosingRoundBracket)
-//            return false;
-//        ++pos;
-//    }
-//
-//    auto function_node = std::make_shared<ASTFunction>();
-//    tryGetIdentifierNameInto(identifier, function_node->name);
-//
-//    /// func(DISTINCT ...) is equivalent to funcDistinct(...)
-//    if (has_distinct_modifier)
-//        function_node->name += "Distinct";
-//
-//    function_node->arguments = expr_list_args;
-//    function_node->children.push_back(function_node->arguments);
-//
-//    if (expr_list_params)
-//    {
-//        function_node->parameters = expr_list_params;
-//        function_node->children.push_back(function_node->parameters);
-//    }
-//
-//    node = function_node;
-    return true;
+    ParserIdentifier id_parser;
+    ParserKeyword distinct("DISTINCT");
+    ParserExpressionList contents(false);
+
+    bool has_distinct_modifier = false;
+
+    ASTPtr identifier;
+    ASTPtr expr_list_args;
+    ASTPtr expr_list_params;
+
+    if (!id_parser.parse(pos, identifier, expected))
+        return false;
+
+    if (pos->type != TokenType::OpeningRoundBracket)
+        return false;
+    ++pos;
+
+    if (distinct.ignore(pos, expected))
+        has_distinct_modifier = true;
+
+    const char * contents_begin = pos->begin;
+    if (!contents.parse(pos, expr_list_args, expected))
+        return false;
+    const char * contents_end = pos->begin;
+
+    if (pos->type != TokenType::ClosingRoundBracket)
+        return false;
+    ++pos;
+
+    /** Check for a common error case - often due to the complexity of quoting command-line arguments,
+      *  an expression of the form toDate(2014-01-01) appears in the query instead of toDate('2014-01-01').
+      * If you do not report that the first option is an error, then the argument will be interpreted as 2014 - 01 - 01 - some number,
+      *  and the query silently returns an unexpected result.
+      */
+    if (getIdentifierName(identifier) == "toDate"
+        && contents_end - contents_begin == strlen("2014-01-01")
+        && contents_begin[0] >= '2' && contents_begin[0] <= '3'
+        && contents_begin[1] >= '0' && contents_begin[1] <= '9'
+        && contents_begin[2] >= '0' && contents_begin[2] <= '9'
+        && contents_begin[3] >= '0' && contents_begin[3] <= '9'
+        && contents_begin[4] == '-'
+        && contents_begin[5] >= '0' && contents_begin[5] <= '9'
+        && contents_begin[6] >= '0' && contents_begin[6] <= '9'
+        && contents_begin[7] == '-'
+        && contents_begin[8] >= '0' && contents_begin[8] <= '9'
+        && contents_begin[9] >= '0' && contents_begin[9] <= '9')
+    {
+        std::string contents_str(contents_begin, contents_end - contents_begin);
+        throw Exception("Argument of function toDate is unquoted: toDate(" + contents_str + "), must be: toDate('" + contents_str + "')");
+    }
+
+    /// The parametric aggregate function has two lists (parameters and arguments) in parentheses. Example: quantile(0.9)(x).
+    if (allow_function_parameters && pos->type == TokenType::OpeningRoundBracket)
+    {
+        ++pos;
+
+        /// Parametric aggregate functions cannot have DISTINCT in parameters list.
+        if (has_distinct_modifier)
+            return false;
+
+        expr_list_params = expr_list_args;
+        expr_list_args = nullptr;
+
+        if (distinct.ignore(pos, expected))
+            has_distinct_modifier = true;
+
+        if (!contents.parse(pos, expr_list_args, expected))
+            return false;
+
+        if (pos->type != TokenType::ClosingRoundBracket)
+            return false;
+        ++pos;
+    }
+
+    auto function_node = std::make_shared<ASTFunction>();
+    tryGetIdentifierNameInto(identifier, function_node->name);
+
+    /// func(DISTINCT ...) is equivalent to funcDistinct(...)
+    if (has_distinct_modifier)
+        function_node->name += "Distinct";
+
+    function_node->arguments = expr_list_args;
+    function_node->children.push_back(function_node->arguments);
+
+    if (expr_list_params)
+    {
+        function_node->parameters = expr_list_params;
+        function_node->children.push_back(function_node->parameters);
+    }
+
+    node = function_node;
+    return false;
 }
 
 //bool ParserCodecDeclarationList::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
@@ -337,73 +324,73 @@ bool ParserFunction::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 
 bool ParserNumber::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
-//    Pos literal_begin = pos;
-//    bool negative = false;
-//
-//    if (pos->type == TokenType::Minus)
-//    {
-//        ++pos;
-//        negative = true;
-//    }
-//    else if (pos->type == TokenType::Plus)  /// Leading plus is simply ignored.
-//        ++pos;
-//
-//    Field res;
-//
-//    if (!pos.isValid())
-//        return false;
-//
-//    /** Maximum length of number. 319 symbols is enough to write maximum double in decimal form.
-//      * Copy is needed to use strto* functions, which require 0-terminated string.
-//      */
-//    static constexpr size_t MAX_LENGTH_OF_NUMBER = 319;
-//
-//    if (pos->size() > MAX_LENGTH_OF_NUMBER)
-//    {
-//        expected.add(pos, "number");
-//        return false;
-//    }
-//
-//    char buf[MAX_LENGTH_OF_NUMBER + 1];
-//
-//    memcpy(buf, pos->begin, pos->size());
-//    buf[pos->size()] = 0;
-//
-//    char * pos_double = buf;
-//    errno = 0;    /// Functions strto* don't clear errno.
-//    Float64 float_value = std::strtod(buf, &pos_double);
-//    if (pos_double != buf + pos->size() || errno == ERANGE)
-//    {
-//        expected.add(pos, "number");
-//        return false;
-//    }
-//
-//    if (float_value < 0)
-//        throw Exception("Logical error: token number cannot begin with minus, but parsed float number is less than zero.", ErrorCodes::LOGICAL_ERROR);
-//
-//    if (negative)
-//        float_value = -float_value;
-//
-//    res = float_value;
-//
-//    /// try to use more exact type: UInt64
-//
-//    char * pos_integer = buf;
-//
-//    errno = 0;
-//    UInt64 uint_value = std::strtoull(buf, &pos_integer, 0);
-//    if (pos_integer == pos_double && errno != ERANGE && (!negative || uint_value <= (1ULL << 63)))
-//    {
-//        if (negative)
-//            res = static_cast<Int64>(-uint_value);
-//        else
-//            res = uint_value;
-//    }
-//
-//    auto literal = std::make_shared<ASTLiteral>(res);
-//    literal->begin = literal_begin;
-//    literal->end = ++pos;
-//    node = literal;
+    Pos literal_begin = pos;
+    bool negative = false;
+
+    if (pos->type == TokenType::Minus)
+    {
+        ++pos;
+        negative = true;
+    }
+    else if (pos->type == TokenType::Plus)  /// Leading plus is simply ignored.
+        ++pos;
+
+    Field res;
+
+    if (!pos.isValid())
+        return false;
+
+    /** Maximum length of number. 319 symbols is enough to write maximum double in decimal form.
+      * Copy is needed to use strto* functions, which require 0-terminated string.
+      */
+    static constexpr size_t MAX_LENGTH_OF_NUMBER = 319;
+
+    if (pos->size() > MAX_LENGTH_OF_NUMBER)
+    {
+        expected.add(pos, "number");
+        return false;
+    }
+
+    char buf[MAX_LENGTH_OF_NUMBER + 1];
+
+    memcpy(buf, pos->begin, pos->size());
+    buf[pos->size()] = 0;
+
+    char * pos_double = buf;
+    errno = 0;    /// Functions strto* don't clear errno.
+    double float_value = std::strtod(buf, &pos_double);
+    if (pos_double != buf + pos->size() || errno == ERANGE)
+    {
+        expected.add(pos, "number");
+        return false;
+    }
+
+    if (float_value < 0)
+        throw Exception("Logical error: token number cannot begin with minus, but parsed float number is less than zero.");
+
+    if (negative)
+        float_value = -float_value;
+
+    res = float_value;
+
+    /// try to use more exact type: UInt64
+
+    char * pos_integer = buf;
+
+    errno = 0;
+    uint64_t uint_value = std::strtoull(buf, &pos_integer, 0);
+    if (pos_integer == pos_double && errno != ERANGE && (!negative || uint_value <= (1ULL << 63)))
+    {
+        if (negative)
+            res = static_cast<uint64_t>(-uint_value);
+        else
+            res = uint_value;
+    }
+
+    auto literal = std::make_shared<ASTLiteral>(res);
+    literal->begin = literal_begin;
+    literal->end = ++pos;
+    node = literal;
     return true;
 }
 
@@ -434,32 +421,37 @@ bool ParserUnsignedInteger::parseImpl(Pos & pos, ASTPtr & node, Expected & expec
 
 bool ParserStringLiteral::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
-//    if (pos->type != TokenType::StringLiteral)
-//        return false;
-//
-//    String s;
-//    ReadBufferFromMemory in(pos->begin, pos->size());
-//
-//    try
-//    {
-//        readQuotedStringWithSQLStyle(s, in);
-//    }
-//    catch (const Exception &)
-//    {
-//        expected.add(pos, "string literal");
-//        return false;
-//    }
-//
+    if (pos->type != TokenType::StringLiteral)
+        return false;
+
+    String s;
+    //ReadBufferFromMemory in(pos->begin, pos->size());
+
+    try
+    {
+        //readQuotedStringWithSQLStyle(s, in);
+        auto start = pos->begin + 1;
+        while (*start != '\'') {
+            s.push_back(*start);
+            ++start;
+        }
+    }
+    catch (const Exception &)
+    {
+        expected.add(pos, "string literal");
+        return false;
+    }
+
 //    if (in.count() != pos->size())
 //    {
 //        expected.add(pos, "string literal");
 //        return false;
 //    }
-//
-//    auto literal = std::make_shared<ASTLiteral>(s);
-//    literal->begin = pos;
-//    literal->end = ++pos;
-//    node = literal;
+
+    auto literal = std::make_shared<ASTLiteral>(s);
+    literal->begin = pos;
+    literal->end = ++pos;
+    node = literal;
     return true;
 }
 
@@ -597,11 +589,11 @@ bool ParserAlias::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
           *  and in the query "SELECT x FRO FROM t", the word FRO was considered an alias.
           */
 
-//        const String name = getIdentifierName(node);
-//
-//        for (const char ** keyword = restricted_keywords; *keyword != nullptr; ++keyword)
-//            if (0 == strcasecmp(name.data(), *keyword))
-//                return false;
+        const String name = getIdentifierName(node);
+
+        for (const char ** keyword = restricted_keywords; *keyword != nullptr; ++keyword)
+            if (0 == strcasecmp(name.data(), *keyword))
+                return false;
     }
 
     return true;
@@ -611,7 +603,7 @@ bool ParserAlias::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 bool ParserColumnsMatcher::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
 
-    return true;
+    return false;
 }
 
 
@@ -627,24 +619,24 @@ bool ParserAsterisk::parseImpl(Pos & pos, ASTPtr & node, Expected &)
 }
 
 
-bool ParserQualifiedAsterisk::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
-{
-//    if (!ParserCompoundIdentifier().parse(pos, node, expected))
-//        return false;
-//
-//    if (pos->type != TokenType::Dot)
-//        return false;
-//    ++pos;
-//
-//    if (pos->type != TokenType::Asterisk)
-//        return false;
-//    ++pos;
-//
-//    auto res = std::make_shared<ASTQualifiedAsterisk>();
-//    res->children.push_back(node);
-//    node = std::move(res);
-    return true;
-}
+//bool ParserQualifiedAsterisk::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
+//{
+////    if (!ParserCompoundIdentifier().parse(pos, node, expected))
+////        return false;
+////
+////    if (pos->type != TokenType::Dot)
+////        return false;
+////    ++pos;
+////
+////    if (pos->type != TokenType::Asterisk)
+////        return false;
+////    ++pos;
+////
+////    auto res = std::make_shared<ASTQualifiedAsterisk>();
+////    res->children.push_back(node);
+////    node = std::move(res);
+//    return true;
+//}
 
 
 bool ParserSubstitution::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
@@ -714,9 +706,9 @@ bool ParserExpressionElement::parseImpl(Pos & pos, ASTPtr & node, Expected & exp
         //|| ParserCase().parse(pos, node, expected)
         || ParserColumnsMatcher().parse(pos, node, expected) /// before ParserFunction because it can be also parsed as a function.
         || ParserFunction().parse(pos, node, expected)
-        || ParserQualifiedAsterisk().parse(pos, node, expected)
+        //|| ParserQualifiedAsterisk().parse(pos, node, expected)
         || ParserAsterisk().parse(pos, node, expected)
-        //|| ParserCompoundIdentifier().parse(pos, node, expected)
+        || ParserCompoundIdentifier().parse(pos, node, expected)
         || ParserSubstitution().parse(pos, node, expected);
 }
 
@@ -772,7 +764,7 @@ bool ParserWithOptionalAlias::parseImpl(Pos & pos, ASTPtr & node, Expected & exp
 
 bool ParserOrderByElement::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 {
-    //ParserExpressionWithOptionalAlias elem_p(false);
+    ParserExpressionWithOptionalAlias elem_p(false);
     ParserKeyword ascending("ASCENDING");
     ParserKeyword descending("DESCENDING");
     ParserKeyword asc("ASC");
@@ -789,8 +781,8 @@ bool ParserOrderByElement::parseImpl(Pos & pos, ASTPtr & node, Expected & expect
     //ParserExpressionWithOptionalAlias exp_parser(false);
 
     ASTPtr expr_elem;
-//    if (!elem_p.parse(pos, expr_elem, expected))
-//        return false;
+    if (!elem_p.parse(pos, expr_elem, expected))
+        return false;
 
     int direction = 1;
 

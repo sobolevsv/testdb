@@ -5,6 +5,7 @@
 #include "../Parser/IParser.h"
 #include "../Parser/ParserSelectQuery.h"
 #include "../Parser/Exception.h"
+#include "../Parser/ASTSelectQuery.h"
 
 
 //void executeQuery(
@@ -41,7 +42,14 @@ void executeQuery( const std::string & query){
         std::cout << "field to parse request: " << e.what();
     }
 
-    std::cout << "query parsed: " << res->getColumnName();
+    if (res) {
+        const ASTSelectQuery & select = res->as<ASTSelectQuery &>();
+
+        std::cout << "query parsed: " << res->getColumnName();
+
+        auto where =  select.where();
+    }
+
 
 //ASTPtr ast;
 //BlockIO streams;

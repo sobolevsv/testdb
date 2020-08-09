@@ -10,7 +10,7 @@
 //#include <Parsers/ParserSetQuery.h>
 //#include <Parsers/ParserSampleRatio.h>
 #include "ParserSelectQuery.h"
-//#include <Parsers/ParserTablesInSelectQuery.h>
+#include "ParserTablesInSelectQuery.h"
 
 
 namespace ErrorCodes
@@ -47,8 +47,9 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
 
     ParserNotEmptyExpressionList exp_list(false);
     ParserNotEmptyExpressionList exp_list_for_with_clause(false);
-    ParserNotEmptyExpressionList exp_list_for_select_clause(true);    /// Allows aliases without AS keyword.
-    //ParserExpressionWithOptionalAlias exp_elem(false);
+    //ParserNotEmptyExpressionList exp_list_for_select_clause(true);    /// Allows aliases without AS keyword.
+    ParserNotEmptyExpressionList exp_list_for_select_clause(true);
+    ParserExpressionWithOptionalAlias exp_elem(false);
     ParserOrderByExpressionList order_list;
 
     ParserToken open_bracket(TokenType::OpeningRoundBracket);
@@ -70,43 +71,11 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
     ASTPtr top_length;
     ASTPtr settings;
 
-//    /// WITH expr list
-//    {
-//        if (s_with.ignore(pos, expected))
-//        {
-//            if (!exp_list_for_with_clause.parse(pos, with_expression_list, expected))
-//                return false;
-//        }
-//    }
 
-    /// SELECT [DISTINCT] [TOP N [WITH TIES]] expr list
+    /// SELECT
     {
         if (!s_select.ignore(pos, expected))
             return false;
-
-//        if (s_distinct.ignore(pos, expected))
-//            select_query->distinct = true;
-
-//        if (s_top.ignore(pos, expected))
-//        {
-//            ParserNumber num;
-//
-//            if (open_bracket.ignore(pos, expected))
-//            {
-//                if (!num.parse(pos, top_length, expected))
-//                    return false;
-//                if (!close_bracket.ignore(pos, expected))
-//                    return false;
-//            }
-//            else
-//            {
-//                if (!num.parse(pos, top_length, expected))
-//                    return false;
-//            }
-//
-//            if (s_with_ties.ignore(pos, expected))
-//                select_query->limit_with_ties = true;
-//        }
 
         if (!exp_list_for_select_clause.parse(pos, select_expression_list, expected))
             return false;
@@ -115,70 +84,23 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
     /// FROM database.table or FROM table or FROM (subquery) or FROM tableFunction(...)
     if (s_from.ignore(pos, expected))
     {
-//        if (!ParserTablesInSelectQuery().parse(pos, tables, expected))
-//            return false;
+        if (!ParserTablesInSelectQuery().parse(pos, tables, expected))
+            return false;
     }
-
-//    /// PREWHERE expr
-//    if (s_prewhere.ignore(pos, expected))
-//    {
-//        if (!exp_elem.parse(pos, prewhere_expression, expected))
-//            return false;
-//    }
 
     /// WHERE expr
     if (s_where.ignore(pos, expected))
     {
-        //if (!exp_elem.parse(pos, where_expression, expected))
+        if (!exp_elem.parse(pos, where_expression, expected))
             return false;
     }
 
     /// GROUP BY expr list
     if (s_group_by.ignore(pos, expected))
     {
-        if (s_rollup.ignore(pos, expected))
-            select_query->group_by_with_rollup = true;
-        else if (s_cube.ignore(pos, expected))
-            select_query->group_by_with_cube = true;
-
-        if ((select_query->group_by_with_rollup || select_query->group_by_with_cube) && !open_bracket.ignore(pos, expected))
-            return false;
-
         if (!exp_list.parse(pos, group_expression_list, expected))
             return false;
-
-        if ((select_query->group_by_with_rollup || select_query->group_by_with_cube) && !close_bracket.ignore(pos, expected))
-            return false;
     }
-
-    /// WITH ROLLUP, CUBE or TOTALS
-    if (s_with.ignore(pos, expected))
-    {
-        if (s_rollup.ignore(pos, expected))
-            select_query->group_by_with_rollup = true;
-        else if (s_cube.ignore(pos, expected))
-            select_query->group_by_with_cube = true;
-        else if (s_totals.ignore(pos, expected))
-            select_query->group_by_with_totals = true;
-        else
-            return false;
-    }
-
-    /// WITH TOTALS
-    if (s_with.ignore(pos, expected))
-    {
-        if (select_query->group_by_with_totals || !s_totals.ignore(pos, expected))
-            return false;
-
-        select_query->group_by_with_totals = true;
-    }
-
-//    /// HAVING expr
-//    if (s_having.ignore(pos, expected))
-//    {
-//        if (!exp_elem.parse(pos, having_expression, expected))
-//            return false;
-//    }
 
     /// ORDER BY expr ASC|DESC COLLATE 'locale' list
     if (s_order_by.ignore(pos, expected))
@@ -195,8 +117,8 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
     {
         ParserToken s_comma(TokenType::Comma);
 
-//        if (!exp_elem.parse(pos, limit_length, expected))
-//            return false;
+        if (!exp_elem.parse(pos, limit_length, expected))
+            return false;
 
         if (s_comma.ignore(pos, expected))
         {
