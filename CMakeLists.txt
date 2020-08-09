@@ -24,6 +24,10 @@ add_executable(columndb main.cpp Server/Server.cpp Server/Server.h Server/csvpar
         Parser/ASTOrderByElement.h
         Parser/ASTFunction.cpp
         Parser/ASTFunction.h
+        Parser/ASTIdentifier.cpp
+        Parser/ASTIdentifier.h
+        Parser/IdentifierSemantic.cpp
+        Parser/IdentifierSemantic.h
         )
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)

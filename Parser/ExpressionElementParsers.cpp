@@ -11,7 +11,7 @@
 #include "IAST.h"
 #include "ASTExpressionList.h"
 #include "ASTFunction.h"
-//#include <Parsers/ASTIdentifier.h>
+#include "ASTIdentifier.h"
 //#include <Parsers/ASTLiteral.h>
 //#include <Parsers/ASTAsterisk.h>
 //#include <Parsers/ASTQualifiedAsterisk.h>
@@ -94,30 +94,38 @@ bool ParserParenthesisExpression::parseImpl(Pos & pos, ASTPtr & node, Expected &
 
 bool ParserIdentifier::parseImpl(Pos & pos, ASTPtr & node, Expected &)
 {
-//    /// Identifier in backquotes or in double quotes
-//    if (pos->type == TokenType::QuotedIdentifier)
-//    {
-//        ReadBufferFromMemory buf(pos->begin, pos->size());
-//        String s;
-//
+    /// Identifier in backquotes or in double quotes
+    if (pos->type == TokenType::QuotedIdentifier)
+    {
+        //ReadBufferFromMemory buf(pos->begin, pos->size());
+        String s;
+        auto quote = *pos->begin;
+
 //        if (*pos->begin == '`')
 //            readBackQuotedStringWithSQLStyle(s, buf);
 //        else
 //            readDoubleQuotedStringWithSQLStyle(s, buf);
-//
-//        if (s.empty())    /// Identifiers "empty string" are not allowed.
-//            return false;
-//
-//        node = std::make_shared<ASTIdentifier>(s);
-//        ++pos;
-//        return true;
-//    }
-//    else if (pos->type == TokenType::BareWord)
-//    {
-//        node = std::make_shared<ASTIdentifier>(String(pos->begin, pos->end));
-//        ++pos;
-//        return true;
-//    }
+
+        auto start = pos->begin + 1;
+        while (*start != quote) {
+            s.push_back(*start);
+            ++start;
+        }
+
+
+        if (s.empty())    /// Identifiers "empty string" are not allowed.
+            return false;
+
+        node = std::make_shared<ASTIdentifier>(s);
+        ++pos;
+        return true;
+    }
+    else if (pos->type == TokenType::BareWord)
+    {
+        node = std::make_shared<ASTIdentifier>(String(pos->begin, pos->end));
+        ++pos;
+        return true;
+    }
 
     return false;
 }
@@ -737,26 +745,26 @@ bool ParserWithOptionalAlias::parseImpl(Pos & pos, ASTPtr & node, Expected & exp
       *
       * In the future it would be easier to disallow unquoted identifiers that match the keywords.
       */
-//    bool allow_alias_without_as_keyword_now = allow_alias_without_as_keyword;
-//    if (allow_alias_without_as_keyword)
-//        if (auto opt_id = tryGetIdentifierName(node))
-//            if (0 == strcasecmp(opt_id->data(), "FROM"))
-//                allow_alias_without_as_keyword_now = false;
-//
-//    ASTPtr alias_node;
-//    if (ParserAlias(allow_alias_without_as_keyword_now).parse(pos, alias_node, expected))
-//    {
-//        /// FIXME: try to prettify this cast using `as<>()`
-//        if (auto * ast_with_alias = dynamic_cast<ASTWithAlias *>(node.get()))
-//        {
-//            tryGetIdentifierNameInto(alias_node, ast_with_alias->alias);
-//        }
-//        else
-//        {
-//            expected.add(pos, "alias cannot be here");
-//            return false;
-//        }
-//    }
+    bool allow_alias_without_as_keyword_now = allow_alias_without_as_keyword;
+    if (allow_alias_without_as_keyword)
+        if (auto opt_id = tryGetIdentifierName(node))
+            if (0 == strcasecmp(opt_id->data(), "FROM"))
+                allow_alias_without_as_keyword_now = false;
+
+    ASTPtr alias_node;
+    if (ParserAlias(allow_alias_without_as_keyword_now).parse(pos, alias_node, expected))
+    {
+        /// FIXME: try to prettify this cast using `as<>()`
+        if (auto * ast_with_alias = dynamic_cast<ASTWithAlias *>(node.get()))
+        {
+            tryGetIdentifierNameInto(alias_node, ast_with_alias->alias);
+        }
+        else
+        {
+            expected.add(pos, "alias cannot be here");
+            return false;
+        }
+    }
 
     return true;
 }

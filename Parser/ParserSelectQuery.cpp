@@ -70,43 +70,43 @@ bool ParserSelectQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
     ASTPtr top_length;
     ASTPtr settings;
 
-    /// WITH expr list
-    {
-        if (s_with.ignore(pos, expected))
-        {
-            if (!exp_list_for_with_clause.parse(pos, with_expression_list, expected))
-                return false;
-        }
-    }
+//    /// WITH expr list
+//    {
+//        if (s_with.ignore(pos, expected))
+//        {
+//            if (!exp_list_for_with_clause.parse(pos, with_expression_list, expected))
+//                return false;
+//        }
+//    }
 
     /// SELECT [DISTINCT] [TOP N [WITH TIES]] expr list
     {
         if (!s_select.ignore(pos, expected))
             return false;
 
-        if (s_distinct.ignore(pos, expected))
-            select_query->distinct = true;
+//        if (s_distinct.ignore(pos, expected))
+//            select_query->distinct = true;
 
-        if (s_top.ignore(pos, expected))
-        {
-            ParserNumber num;
-
-            if (open_bracket.ignore(pos, expected))
-            {
-                if (!num.parse(pos, top_length, expected))
-                    return false;
-                if (!close_bracket.ignore(pos, expected))
-                    return false;
-            }
-            else
-            {
-                if (!num.parse(pos, top_length, expected))
-                    return false;
-            }
-
-            if (s_with_ties.ignore(pos, expected))
-                select_query->limit_with_ties = true;
-        }
+//        if (s_top.ignore(pos, expected))
+//        {
+//            ParserNumber num;
+//
+//            if (open_bracket.ignore(pos, expected))
+//            {
+//                if (!num.parse(pos, top_length, expected))
+//                    return false;
+//                if (!close_bracket.ignore(pos, expected))
+//                    return false;
+//            }
+//            else
+//            {
+//                if (!num.parse(pos, top_length, expected))
+//                    return false;
+//            }
+//
+//            if (s_with_ties.ignore(pos, expected))
+//                select_query->limit_with_ties = true;
+//        }
 
         if (!exp_list_for_select_clause.parse(pos, select_expression_list, expected))
             return false;
