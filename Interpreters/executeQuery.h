@@ -1,5 +1,6 @@
 #pragma once
 
 #include <string>
+#include <DataStreams/BlockStream.h>
 
-void executeQuery( const std::string & query);
+BlockStreamPtr executeQuery( const std::string & query);

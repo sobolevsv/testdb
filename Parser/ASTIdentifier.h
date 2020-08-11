@@ -48,6 +48,13 @@ public:
         return name;
     }
 
+    const String & firstComponentName() const
+    {
+        if (name_parts.size() > 1 )
+            return name_parts[0];
+        return name;
+    }
+
     void resetTable(const String & database_name, const String & table_name);
 
 protected:
@@ -67,6 +74,8 @@ private:
     friend void setIdentifierSpecial(ASTPtr & ast);
     friend StorageID getTableIdentifier(const ASTPtr & ast);
 };
+
+using ASTIdentifierPtr = std::shared_ptr<ASTIdentifier>;
 
 
 /// ASTIdentifier Helpers: hide casts and semantic.

@@ -26,6 +26,8 @@ protected:
     //void appendColumnNameImpl(WriteBuffer & ostr) const override;
 };
 
+using ASTFunctionPtr = std::shared_ptr<ASTFunction>;
+
 
 template <typename... Args>
 std::shared_ptr<ASTFunction> makeASTFunction(const String & name, Args &&... args)

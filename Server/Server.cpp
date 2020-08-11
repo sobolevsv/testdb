@@ -1,6 +1,6 @@
 #include "Server.h"
 #include "csvparser.h"
-#include "../Interpreters/executeQuery.h"
+#include "Interpreters/executeQuery.h"
 
 
 void Server::processImportRequest(const httplib::Request& req, httplib::Response& res){
@@ -14,12 +14,43 @@ void Server::processImportRequest(const httplib::Request& req, httplib::Response
 }
 
 void Server::processQueryRequest(const httplib::Request& req, httplib::Response& res) {
+    BlockStreamPtr out;
     for(auto  &a : req.params) {
-        std::cout << a.first << ", 2:" << a.second << std::endl;
         if (a.first == "sql") {
-            executeQuery(a.second);
+            out = executeQuery(a.second);
+            break;
         }
     }
 
-    std::cout << req.body << std::endl;
+    std::stringstream ss;
+
+    try {
+        while (*out) {
+            auto block = out->pop();
+            if (block->columns.empty())
+                break;
+
+            for (const auto & curCol: block->columns) {
+                auto colName = curCol->alias.empty() ? curCol->columnName : curCol->alias;
+                std::cout << colName << ',';
+                ss << colName << ',';
+            }
+            std::cout << std::endl;
+            ss << std::endl;
+            for (int i = 0; i < block->columns[0]->data.size(); ++i) {
+                for (const auto & col : block->columns) {
+                    std::cout << col->data[i] << ',';
+                    ss << col->data[i] << ',';
+                }
+                std::cout << std::endl;
+                ss << std::endl;
+            }
+        }
+    }
+    catch (const char * err) {
+        std::cerr << err << std::endl;
+    }
+
+
+    res.set_content( ss.str(), "text/plain");
 }

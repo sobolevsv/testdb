@@ -177,4 +177,4 @@ bool tryGetIdentifierNameInto(const IAST * ast, String & name)
 //        return { identifier.name_parts[0], identifier.name_parts[1], identifier.uuid };
 //    return { "", identifier.name, identifier.uuid };
 //}
-//
+

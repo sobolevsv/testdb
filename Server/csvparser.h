@@ -4,16 +4,16 @@
 #include <vector>
 #include <sstream>
 
-struct Field {
+struct Cell {
     const char * start;
     int size;
 };
 
-using fields_t = std::vector<Field>;
+using fields_t = std::vector<Cell>;
 
 const char* parseLine(const char* begin, const char* end, fields_t &fields) {
 
-    Field cell {nullptr, 0};
+    Cell cell {nullptr, 0};
 
     while(begin != end) {
         if(*begin == '\n') {
@@ -48,7 +48,7 @@ int csvParser(const std::string &body) {
 
     std::vector< std::vector<char>> columnsData(fields.size());
 
-    std::ofstream outfile ("data/column.txt",std::ofstream::binary);
+    std::ofstream outfile ("data/columns.txt",std::ofstream::binary);
     for(auto col : fields) {
         std::string colName(col.start, col.size);
         columnsName.push_back(colName);
@@ -66,6 +66,7 @@ int csvParser(const std::string &body) {
             auto &field = fields[i];
             auto &column = columnsData[i];
             column.insert(column.end(), field.start, field.start + field.size);
+            column.push_back('\n');
         }
 
         fields.clear();
