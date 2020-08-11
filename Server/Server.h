@@ -17,6 +17,9 @@ public:
         });
     }
 
+    static std::string dataPath;
+    static std::string defaultDB;
+
 private:
 
     void processImportRequest(const httplib::Request& req, httplib::Response& res);

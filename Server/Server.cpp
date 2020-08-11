@@ -3,14 +3,15 @@
 #include "Interpreters/executeQuery.h"
 #include "Common/Exception.h"
 
+std::string Server::dataPath = "data/";
+std::string Server::defaultDB = "test";
 
-void Server::processImportRequest(const httplib::Request& req, httplib::Response& res){
-    auto numbers = req.matches[1];
+void Server::processImportRequest(const httplib::Request& req, httplib::Response& res) {
+    std::string tableName;
+    if (req.matches.size() > 1)
+        tableName = req.matches[1];
 
-    for(auto a : req.matches) {
-        std::cout << a << std::endl;
-    }
-    int rowsCount = csvParser(req.body);
+    int rowsCount = csvParser(tableName, req.body);
     res.set_content( std::to_string(rowsCount) + " rows imported", "text/plain");
 }
 

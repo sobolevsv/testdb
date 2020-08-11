@@ -251,7 +251,7 @@ bool ParserFunction::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
     }
 
     node = function_node;
-    return false;
+    return true;
 }
 
 //bool ParserCodecDeclarationList::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)

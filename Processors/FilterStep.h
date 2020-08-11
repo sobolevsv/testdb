@@ -40,7 +40,6 @@ BlockPtr FilterBlock(BlockPtr blockIn, ASTFunctionPtr filter ){
     int numRows = blockIn->columns[filterColumnIndex]->data.size();
 
     for (int i = 0; i < numRows; ++i) {
-        bool skipRow = false;
 
         if(blockIn->columns[filterColumnIndex]->data[i] != filterStrValue){
             continue;
@@ -49,9 +48,6 @@ BlockPtr FilterBlock(BlockPtr blockIn, ASTFunctionPtr filter ){
         for (int j = 0; j < blockIn->columns.size(); ++j) {
             blockOut->columns[j]->data.push_back(blockIn->columns[j]->data[i]);
         }
-
-        if (skipRow)
-            continue;
 
         for (int i = 0; i < rowValues.size(); ++i) {
             blockOut->columns[i]->data.push_back(rowValues[i]);
@@ -70,7 +66,6 @@ BlockStreamPtr FilterStep(BlockStreamPtr in, ASTFunctionPtr filter ) {
             continue;
 
         out->push(FilterBlock(block, filter));
-        //out->push(block);
     }
 
     out->close();

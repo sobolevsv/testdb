@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <filesystem>
+#include "Server.h"
 
 struct Cell {
     const char * start;
@@ -36,7 +38,7 @@ const char* parseLine(const char* begin, const char* end, fields_t &fields) {
     return begin;
 }
 
-int csvParser(const std::string &body) {
+int csvParser(std::string tableName, const std::string &body) {
     auto pos = body.c_str();
     auto end = pos + body.size();
 
@@ -46,9 +48,13 @@ int csvParser(const std::string &body) {
     pos = parseLine(pos, end, fields);
     ++pos;
 
+    std:: string tablePath = Server::dataPath + "/" + Server::defaultDB +"/" + tableName + "/";
+
+    std::filesystem::create_directories(tablePath);
+
     std::vector< std::vector<char>> columnsData(fields.size());
 
-    std::ofstream outfile ("data/columns.txt",std::ofstream::binary);
+    std::ofstream outfile (tablePath + "columns.txt",std::ofstream::binary);
     for(auto col : fields) {
         std::string colName(col.start, col.size);
         columnsName.push_back(colName);
@@ -75,12 +81,12 @@ int csvParser(const std::string &body) {
     }
 
     for(int i = 0; i < columnsName.size(); i++) {
-        std::string fileName = "data/" + columnsName[i];
+        std::string fileName = tablePath + columnsName[i];
         std::ofstream colFile(fileName, std::ofstream::binary);
         colFile.write(&columnsData[i][0], columnsData[i].size());
     }
 
-    std::ofstream countFile ("data/count.txt", std::ofstream::binary);
+    std::ofstream countFile (tablePath + "count.txt", std::ofstream::binary);
     countFile << count;
     return count;
 }
