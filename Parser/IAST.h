@@ -4,7 +4,7 @@
 #include "IAST_fwd.h"
 
 //#include <Parsers/IdentifierQuotingStyle.h>
-#include "Exception.h"
+#include "Common/Exception.h"
 #include "TypePromotion.h"
 
 #include <algorithm>

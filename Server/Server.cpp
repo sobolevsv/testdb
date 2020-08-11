@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "csvparser.h"
 #include "Interpreters/executeQuery.h"
+#include "Common/Exception.h"
 
 
 void Server::processImportRequest(const httplib::Request& req, httplib::Response& res){
@@ -15,42 +16,68 @@ void Server::processImportRequest(const httplib::Request& req, httplib::Response
 
 void Server::processQueryRequest(const httplib::Request& req, httplib::Response& res) {
     BlockStreamPtr out;
-    for(auto  &a : req.params) {
-        if (a.first == "sql") {
-            out = executeQuery(a.second);
-            break;
+
+    try {
+        for(auto  &a : req.params) {
+            if (a.first == "sql") {
+                out = executeQuery(a.second);
+                break;
+            }
         }
+    }
+    catch (const Exception & err) {
+        std::cerr << err.what() << std::endl;
+        res.set_content( err.what(), "text/plain");
+        res.status = 400;
+        return;
     }
 
     std::stringstream ss;
 
     try {
+        // pull blocks from stream until it closed and empty
         while (*out) {
             auto block = out->pop();
             if (block->columns.empty())
                 break;
 
+            bool first = true;
+            // print columns header
             for (const auto & curCol: block->columns) {
                 auto colName = curCol->alias.empty() ? curCol->columnName : curCol->alias;
-                std::cout << colName << ',';
-                ss << colName << ',';
+                if (!first) {
+                    ss <<  ',';
+                    std::cout <<  ',';
+                }
+                std::cout << colName;
+                ss << colName;
+                first = false;
             }
             std::cout << std::endl;
             ss << std::endl;
+
+            // print columns data
             for (int i = 0; i < block->columns[0]->data.size(); ++i) {
+                first = true;
                 for (const auto & col : block->columns) {
-                    std::cout << col->data[i] << ',';
-                    ss << col->data[i] << ',';
+                    if (!first) {
+                        std::cout << ',';
+                        ss << ',';
+                    }
+                    std::cout << col->data[i];
+                    ss << col->data[i];
+                    first = false;
                 }
                 std::cout << std::endl;
                 ss << std::endl;
             }
         }
     }
-    catch (const char * err) {
-        std::cerr << err << std::endl;
+    catch (const Exception & err) {
+        std::cerr << err.what() << std::endl;
+        res.set_content( err.what(), "text/plain");
+        res.status = 400;
     }
-
 
     res.set_content( ss.str(), "text/plain");
 }

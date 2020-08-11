@@ -55,3 +55,4 @@ protected:
     //void appendColumnNameImpl(WriteBuffer & ostr) const override;
 };
 
+using ASTLiteralPtr = std::shared_ptr<ASTLiteral>;

@@ -9,8 +9,9 @@ include(Server/CMakeLists.txt)
 include(DataStreams/CMakeLists.txt)
 include(Processors/CMakeLists.txt)
 include(Libs/CMakeLists.txt)
+include(Common/CMakeLists.txt)
 
-add_executable(columndb main.cpp ${myApp_SOURCES} DataStreams/BlockStream.cpp DataStreams/BlockStream.h)
+add_executable(columndb main.cpp ${myApp_SOURCES})
 
 target_include_directories(columndb PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 

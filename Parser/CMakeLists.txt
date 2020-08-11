@@ -6,7 +6,6 @@ list(APPEND myApp_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/StringUtils.h
         ${CMAKE_CURRENT_LIST_DIR}/TokenIterator.cpp
         ${CMAKE_CURRENT_LIST_DIR}/TokenIterator.h
-        ${CMAKE_CURRENT_LIST_DIR}/Exception.h
         ${CMAKE_CURRENT_LIST_DIR}/IAST.cpp
         ${CMAKE_CURRENT_LIST_DIR}/IAST.h
         ${CMAKE_CURRENT_LIST_DIR}/IAST_fwd.h

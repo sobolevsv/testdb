@@ -1,11 +1,10 @@
 #include <iostream>
+#include <Processors/FilterStep.h>
 #include "InterpreterSelectQuery.h"
 #include "Parser/ASTIdentifier.h"
 #include "Parser/ASTFunction.h"
 #include "Parser/ASTLiteral.h"
 #include "Processors/SelectStep.h"
-
-using ASTLiteralPtr = std::shared_ptr<ASTLiteral>;
 
 using columns_vector = std::vector<ASTIdentifierPtr>;
 
@@ -75,7 +74,8 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as)
     auto where = traverseWhereExpr(selectQuery->where());
     //std::cout << "where : " << where << std::endl;
 
-    BlockStreamPtr out = SelectStep(columns);
+    BlockStreamPtr selectout = SelectStep(columns);
+    BlockStreamPtr filterOut = FilterStep(selectout, where);
 
-    return out;
+    return filterOut;
 }

@@ -3,6 +3,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <Common/Exception.h>
 
 
 template<class T>
@@ -24,7 +25,7 @@ public:
 
     T pop() {
         if(closed && m_msg_queue.empty()) {
-            throw "stream is closed and empty";
+            throw  Exception("stream is closed and empty");
         }
 
         std::unique_lock<std::mutex> l(m_lock);

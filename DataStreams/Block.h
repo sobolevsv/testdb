@@ -10,5 +10,6 @@ struct Block
     ColumnList columns;
 };
 
-
 using BlockPtr = std::shared_ptr<Block>;
+
+BlockPtr makeNewBlockLike(BlockPtr in);

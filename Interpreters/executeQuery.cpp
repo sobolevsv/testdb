@@ -5,19 +5,9 @@
 #include "Parser/IParser.h"
 #include "Parser/ParserSelectQuery.h"
 #include "InterpreterBase.h"
-//#include "Parser/ASTSelectQuery.h"
-
-
-//void executeQuery(
-//        ReadBuffer & istr,
-//        WriteBuffer & ostr,
-//        bool allow_into_outfile,
-//        Context & context,
-//        std::function<void(const String &, const String &, const String &, const String &)> set_result_details) {
 
 BlockStreamPtr executeQuery( const std::string & query){
 
-    BlockStreamPtr out;
     auto begin = query.c_str();
     auto end = query.c_str() + query.size();
 
@@ -35,12 +25,8 @@ BlockStreamPtr executeQuery( const std::string & query){
     }
 
     if (res) {
-        out = InterpreterBase(res);
+        return InterpreterBase(res);
     }
-    return out;
-//ASTPtr ast;
-//Block streams;
-//
-//std::tie(ast, streams) = executeQueryImpl(begin, end, context, false, QueryProcessingStage::Complete, may_have_tail, &istr);
 
+    throw Exception("failed to parse query: " + query);
 }

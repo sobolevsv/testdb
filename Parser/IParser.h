@@ -10,7 +10,7 @@
 //#include <IO/WriteHelpers.h>
 #include "IAST.h"
 #include "TokenIterator.h"
-#include "Exception.h"
+#include "Common/Exception.h"
 
 
 namespace ErrorCodes

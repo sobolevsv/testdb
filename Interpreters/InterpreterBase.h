@@ -12,7 +12,8 @@ BlockStreamPtr InterpreterBase(ASTPtr & query) {
     if (query->as<ASTSelectQuery>()) {
         InterpreterSelectQuery selectQuery;
         res = selectQuery.execute(query);
+        return res;
     }
 
-    return res;
+    throw Exception("only select statement supported");
 }
