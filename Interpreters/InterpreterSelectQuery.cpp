@@ -1,13 +1,13 @@
 #include <iostream>
 #include <Processors/FilterStep.h>
 #include <Parser/ASTTableExpression.h>
+#include <Processors/DropColumnsStep.h>
 #include "InterpreterSelectQuery.h"
 #include "Parser/ASTIdentifier.h"
 #include "Parser/ASTFunction.h"
 #include "Parser/ASTLiteral.h"
 #include "Processors/SelectStep.h"
 
-using ASTIdentifierList = std::vector<ASTIdentifierPtr>;
 using functionList = std::vector<ASTFunctionPtr>;
 
 std::ostream &operator<<(std::ostream &os, const ASTIdentifierPtr &as) {
@@ -91,27 +91,63 @@ ASTFunctionPtr getFilterFunctions(ASTPtr as) {
     return function;
 }
 
+ASTIdentifierList getFilterColumnsFunctions(ASTPtr as) {
+    ASTIdentifierList columns;
+    auto function = std::dynamic_pointer_cast<ASTFunction>(as);
+    for (auto arg : function->arguments->children) {
+        auto column = std::dynamic_pointer_cast<ASTIdentifier>(arg);
+        if (column) {
+            columns.push_back(column);
+        }
+    }
+    return columns;
+}
+
+bool combineColumns(ASTIdentifierList selectColumn, ASTIdentifierList whereColumn, ASTIdentifierList& res) {
+    bool combined = false;
+    std::set<std::string> selectColumnSet;
+    for(auto & a: selectColumn) {
+        selectColumnSet.insert(a->shortName());
+        res.push_back(a);
+    }
+    for (auto& a : whereColumn) {
+        if(selectColumnSet.find(a->shortName()) == selectColumnSet.end()) {
+            res.push_back(a);
+            combined = true;
+        }
+    }
+    return combined;
+}
+
 
 BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as)
 {
     auto selectQuery = std::dynamic_pointer_cast<ASTSelectQuery>(as);
-    auto columns = getColumns(selectQuery->select());
+    auto selectColumns = getColumns(selectQuery->select());
     auto agrFunc = getAgrFunctions(selectQuery->select());
 
-    for(auto &col : columns) {
+    for(auto &col : selectColumns) {
         std::cout << col << std::endl;
     }
 
     auto where = getFilterFunctions(selectQuery->where());
+    auto whereColumns = getFilterColumnsFunctions(selectQuery->where());
+    ASTIdentifierList allColumns;
+    bool combined = combineColumns(selectColumns, whereColumns, allColumns);
 
     auto table = getTables(selectQuery->tables());
     auto groupBy = selectQuery->groupBy();
 
-    BlockStreamPtr selectOut = SelectStep(columns, table);
-    BlockStreamPtr filterOut = selectOut;
+    BlockStreamPtr selectStream = SelectStep(allColumns, table);
+    BlockStreamPtr aggrInputStream = selectStream;
     if (where) {
-        filterOut = FilterStep(selectOut, where);
+        auto filteredStream = FilterStep(selectStream, where);
+        if (combined) {
+            aggrInputStream = DropColumnsStep(filteredStream, selectColumns);
+        } else {
+            aggrInputStream = filteredStream;
+        }
     }
 
-    return filterOut;
+    return aggrInputStream;
 }

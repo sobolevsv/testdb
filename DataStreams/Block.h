@@ -12,4 +12,4 @@ struct Block
 
 using BlockPtr = std::shared_ptr<Block>;
 
-BlockPtr makeNewBlockLike(BlockPtr in);
+BlockPtr cloneBlockWithoutData(BlockPtr in);

@@ -3,10 +3,10 @@
 #include "Block.h"
 
 
-BlockPtr makeNewBlockLike(BlockPtr in)  {
+BlockPtr cloneBlockWithoutData(BlockPtr in)  {
     auto res = std::make_shared<Block>();
     for (const auto & curCol: in->columns) {
-        res->columns.push_back(cloneWithoutData(curCol));
+        res->columns.push_back(cloneColumnWithoutData(curCol));
     }
     return res;
 }

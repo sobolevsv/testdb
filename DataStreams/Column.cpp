@@ -3,7 +3,7 @@
 #include "Column.h"
 
 
-ColumnPtr cloneWithoutData(ColumnPtr in) {
+ColumnPtr cloneColumnWithoutData(ColumnPtr in) {
     auto res = std::make_shared<Column>();
     res->columnName = in->columnName;
     res->alias = in->alias;

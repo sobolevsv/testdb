@@ -76,6 +76,7 @@ private:
 };
 
 using ASTIdentifierPtr = std::shared_ptr<ASTIdentifier>;
+using ASTIdentifierList = std::vector<ASTIdentifierPtr>;
 
 
 /// ASTIdentifier Helpers: hide casts and semantic.

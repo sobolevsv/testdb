@@ -6,7 +6,7 @@
 #include <Parser/ASTLiteral.h>
 
 BlockPtr FilterBlock(BlockPtr blockIn, ASTFunctionPtr filter ){
-    BlockPtr blockOut = makeNewBlockLike(blockIn);
+    BlockPtr blockOut = cloneBlockWithoutData(blockIn);
 
     ASTIdentifierPtr filterColumnName;
     ASTLiteralPtr filterColumnValue;

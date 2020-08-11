@@ -13,7 +13,7 @@ std::vector<std::string> data;
 std::string columnName;
 std::string alias;
 
-ColumnList makeColumnList(std::vector<ASTIdentifierPtr> columnsName) {
+ColumnList makeColumnList(ASTIdentifierList columnsName) {
     ColumnList res;
     for (auto a: columnsName) {
         auto col = std::make_shared<Column>();
@@ -24,7 +24,7 @@ ColumnList makeColumnList(std::vector<ASTIdentifierPtr> columnsName) {
     return res;
 }
 
-BlockStreamPtr SelectStep(std::vector<ASTIdentifierPtr> columnsName, ASTIdentifierPtr table) {
+BlockStreamPtr SelectStep(ASTIdentifierList columnsName, ASTIdentifierPtr table) {
 
     BlockStreamPtr out = std::make_shared<BlockStream>();
 

@@ -11,7 +11,7 @@ include(Processors/CMakeLists.txt)
 include(Libs/CMakeLists.txt)
 include(Common/CMakeLists.txt)
 
-add_executable(columndb main.cpp ${myApp_SOURCES})
+add_executable(columndb main.cpp ${myApp_SOURCES} Processors/DropColumnsStep.h)
 
 target_include_directories(columndb PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 

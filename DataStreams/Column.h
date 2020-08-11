@@ -15,4 +15,4 @@ struct Column {
 using ColumnPtr = std::shared_ptr<Column>;
 using ColumnList = std::vector<ColumnPtr>;
 
-ColumnPtr cloneWithoutData(ColumnPtr);
+ColumnPtr cloneColumnWithoutData(ColumnPtr in);
