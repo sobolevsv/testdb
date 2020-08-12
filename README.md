@@ -5,7 +5,14 @@
 sudo apt-get install cmake
 ```
 
-if GCC 9 is not found, install it
+check GCC version  
+
+```
+gcc --version
+```
+
+
+if GCC is not found or version below 9, install GCC 9 
 
 ```
 apt-get install gcc-9 g++-9
@@ -31,7 +38,7 @@ run:
 run in Docker:
 
 ```
-cd columndb
+cd testdb
 docker build -t testdb .
 docker run -p 8080:8080 --init --rm  testdb:latest
 ```
