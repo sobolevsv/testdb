@@ -1,10 +1,13 @@
 #### Build on linux
-#### Install CMake
-```shell script
+#### Install cmake
+
+```
 sudo apt-get install cmake
 ```
+
 Build
-```shell script
+
+```
 cd columndb
 mkdir build
 cd build
@@ -13,7 +16,8 @@ make
 ```
 
 run:
-```shell script
+
+```
 ./columndb --port 8080
 ```
 
@@ -27,7 +31,7 @@ docker run -p 8080:8080 --init --rm  testdb:latest
 ```
 
 
-####Test
+#### Test
 
 Download csv file
 https://www.kaggle.com/hanselhansel/donorschoose?select=Donors.csv
@@ -41,7 +45,8 @@ curl --location --request POST 'http://localhost:8080/post/donors' \
 ```
 
 for select
-```sql
+
+```
  SELECT
   count(*) `donors__count`FROM
   test.donors AS `donors`WHERE
@@ -51,14 +56,16 @@ LIMIT
 
 ```
 
-run following curl  
+run following curl
+  
 ```shell script
 curl --location --request GET 'http://localhost:8080/query?sql=%20SELECT%0A%20%20count(*)%20%60donors__count%60FROM%0A%20%20test.donors%20AS%20%60donors%60WHERE%0A%20%20(%60donors%60.%22Donor%20City%22%20%3D%20%22San%20Francisco%22)%0ALIMIT%0A%20%2010000%0A'
 ```
 
 
 for query
-```sql
+
+```
 SELECT
      `donors`."Donor State" `donors__donor_state`,
      count(*) `donors__count`FROM
@@ -71,6 +78,7 @@ SELECT
 ```
 
 run
+
 ```
 curl --location --request GET 'http://localhost:8080/query?sql=SELECT%0A%20%20`donors`.%22Donor%20State%22%20`donors__donor_state`,%0A%20%20count(*)%20`donors__count`FROM%0A%20%20test.donors%20AS%20`donors`GROUP%20BY%0A%20%201%0AORDER%20BY%0A%20%202%20DESC%0ALIMIT%0A%20%2010000%0A'
 ```
