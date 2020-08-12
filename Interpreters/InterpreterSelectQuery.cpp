@@ -4,11 +4,13 @@
 #include <Processors/DropColumnsStep.h>
 #include <Processors/GroupByStep.h>
 #include <Processors/LimitStep.h>
+#include <Parser/ASTOrderByElement.h>
 #include "InterpreterSelectQuery.h"
 #include "Parser/ASTIdentifier.h"
 #include "Parser/ASTFunction.h"
 #include "Parser/ASTLiteral.h"
 #include "Processors/SelectStep.h"
+#include "Processors/OrderByStep.h"
 
 
 std::ostream &operator<<(std::ostream &os, const ASTIdentifierPtr &as) {
@@ -57,6 +59,8 @@ ASTIdentifierList getColumns(ASTPtr as) {
 
 ASTIdentifierList getGroupByColumns(ASTIdentifierList selectColumn, ASTPtr groupby) {
     ASTIdentifierList columns;
+    if (!groupby)
+        return columns;
     for (auto a: groupby->children) {
         auto column = std::dynamic_pointer_cast<ASTIdentifier>(a);
         if (column) {
@@ -68,12 +72,78 @@ ASTIdentifierList getGroupByColumns(ASTIdentifierList selectColumn, ASTPtr group
         auto literal = std::dynamic_pointer_cast<ASTLiteral>(a);
         if (literal) {
             if (isInt64FieldType(literal->value.getType())) {
-                int index = literal->value.get<int>() - 1; // 1-based index
-                if( index >= 0 && index < selectColumn.size()) {
-                    columns.push_back(selectColumn[index]);
+                int index = literal->value.get<int>();
+                if (index > 0 && index <= selectColumn.size()) {
+                    columns.push_back(selectColumn[index - 1]); // 1-based index
+                } else {
+                    throw Exception("column index '" + std::to_string(index) + "' in ORDER BY is out of range");
                 }
             }
             continue;
+        }
+    }
+    return columns;
+}
+
+orderByColumnList getOrderByColumns(ASTIdentifierList selectColumn, ASTPtr orderBy) {
+    orderByColumnList columns;
+    if (!orderBy)
+        return columns;
+
+    std::map<std::string, int> selectColNameSet;
+    std::map<std::string, int> selectColAliasSet;
+    for (int i = 0; i < selectColumn.size(); ++i) {
+        auto &col = selectColumn[i];
+        selectColNameSet[col->shortName()] = i;
+        if (!col->alias.empty()) {
+            selectColAliasSet[col->alias] = i;
+        }
+    }
+
+    for (auto a: orderBy->children) {
+        auto orderByEl = std::dynamic_pointer_cast<ASTOrderByElement>(a);
+        if (!orderByEl) {
+            continue;
+        }
+
+        if (orderByEl->children.empty()) {
+            continue;
+        }
+
+        auto orderByLiteral = std::dynamic_pointer_cast<ASTLiteral>(orderByEl->children[0]);
+        if (orderByLiteral) {
+            orderByColumn col;
+            col.direction = orderByEl->direction;
+
+            if (isInt64FieldType(orderByLiteral->value.getType())) {
+                int index = orderByLiteral->value.get<int>();
+                if (index > 0 && index <= selectColumn.size()) {
+                    col.columnIndex = index - 1; // 1-based index
+                    columns.push_back(col);
+                } else {
+                    throw Exception("column index '" + std::to_string(index) + "' in ORDER BY is out of range");
+                }
+            }
+            continue;
+        }
+        auto orderByColumnName = std::dynamic_pointer_cast<ASTIdentifier>(orderByEl->children[0]);
+        if (orderByColumnName) {
+            orderByColumn col;
+            col.direction = orderByEl->direction;
+            auto indexByName = selectColNameSet.find(orderByColumnName->shortName());
+            if (indexByName != selectColNameSet.end()) {
+                col.columnIndex = indexByName->second;
+                columns.push_back(col);
+                continue;
+            }
+
+            auto indexByAlias = selectColAliasSet.find(orderByColumnName->shortName());
+            if (indexByAlias != selectColAliasSet.end()) {
+                col.columnIndex = indexByAlias->second;
+                columns.push_back(col);
+                continue;
+            }
+            throw Exception("unknown column name '" + orderByColumnName->shortName() + "' in ORDER BY");
         }
     }
     return columns;
@@ -145,7 +215,7 @@ bool combineColumns(ASTIdentifierList selectColumn, ASTIdentifierList whereColum
     }
     for (auto &a : whereColumn) {
         if (selectColNameSet.find(a->shortName()) == selectColNameSet.end() &&
-            selectColAliasSet.find(a->shortName()) == selectColAliasSet.end() ) {
+            selectColAliasSet.find(a->shortName()) == selectColAliasSet.end()) {
             res.push_back(a);
             combined = true;
         }
@@ -168,6 +238,8 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
 
     auto groupBy = getGroupByColumns(selectColumns, selectQuery->groupBy());
 
+    auto orderBy = selectQuery->orderBy();
+
     auto limit = selectQuery->limitLength();
 
     BlockStreamPtr outputStream = SelectStep(allColumns, table);
@@ -179,13 +251,18 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
         }
     }
 
-    if (!groupBy.empty()) {
+    if (!agrFunc.empty()) {
         outputStream = GroupByStep(outputStream, agrFunc, groupBy);
     }
 
-    if(limit) {
+    if (orderBy) {
+        outputStream = OrderByStep(outputStream, getOrderByColumns(selectColumns, orderBy));
+    }
+
+    if (limit) {
         outputStream = LimitStep(outputStream, limit);
     }
+
 
     return outputStream;
 }

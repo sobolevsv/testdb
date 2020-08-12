@@ -36,7 +36,6 @@ BlockStreamPtr LimitStep(BlockStreamPtr in, ASTPtr as) {
 
     BlockStreamPtr out = std::make_shared<BlockStream>();
 
-
     while (*in) {
         auto block = in->pop();
         if (block->columns.empty())
