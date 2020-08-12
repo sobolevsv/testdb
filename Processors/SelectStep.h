@@ -28,7 +28,7 @@ BlockStreamPtr SelectStep(ColumnList& columnsList, ASTIdentifierPtr table) {
 
     BlockStreamPtr out = std::make_shared<BlockStream>();
 
-    if (table->compound()  && table->firstComponentName() != "test") {
+    if (table->compound()  && table->firstComponentName() != Server::defaultDB) {
         throw Exception("unknown schema/database: " + table->firstComponentName());
     }
 
