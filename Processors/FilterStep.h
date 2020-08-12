@@ -41,7 +41,7 @@ BlockPtr FilterBlock(BlockPtr blockIn, ASTFunctionPtr filter ){
 
     for (int i = 0; i < numRows; ++i) {
 
-        if(blockIn->columns[filterColumnIndex]->data[i] != filterStrValue){
+        if(boost::get<std::string>(blockIn->columns[filterColumnIndex]->data[i]) != filterStrValue){
             continue;
         }
         for (int j = 0; j < blockIn->columns.size(); ++j) {

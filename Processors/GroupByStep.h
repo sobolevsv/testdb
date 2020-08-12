@@ -6,7 +6,7 @@
 #include <map>
 
 struct AggregationResultRow{
-    std::vector<std::string> rowValues;
+    std::vector<Column::fieldType> rowValues;
 
     using AggrFuncName = std::string;
     std::map<AggrFuncName, int64_t> rowAggrResults;
@@ -57,7 +57,7 @@ BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIde
         for (int i = 0; i < numRows; ++i) {
             std::string key;
             for (auto &col : block->columns) {
-                key += col->data[i];
+                key += boost::get<std::string>(col->data[i]);
             }
             for (int j = 0; j < aggrFunctions.size(); ++j) {
                 auto it = results.find(key);
@@ -97,7 +97,7 @@ BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIde
         }
         for (int i = 0; i < aggrFunctions.size(); ++i) {
             auto funcRes = res.second.rowAggrResults[aggrFunctions[i]->name];
-            lastBlock->columns[res.second.rowValues.size() + i]->data.push_back(std::to_string(funcRes));
+            lastBlock->columns[res.second.rowValues.size() + i]->data.push_back(funcRes);
         }
     }
 

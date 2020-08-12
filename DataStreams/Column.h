@@ -2,13 +2,15 @@
 #include <vector>
 #include <string>
 #include <list>
+#include "boost/variant.hpp"
 
 
 struct Column {
 
     std::string columnName;
     std::string alias;
-    std::vector<std::string> data;
+    using fieldType = boost::variant<int, std::string>;
+    std::vector<fieldType> data;
 
 };
 
