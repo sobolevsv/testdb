@@ -3,6 +3,7 @@
 #include <Parser/ASTTableExpression.h>
 #include <Processors/DropColumnsStep.h>
 #include <Processors/GroupByStep.h>
+#include <Processors/LimitStep.h>
 #include "InterpreterSelectQuery.h"
 #include "Parser/ASTIdentifier.h"
 #include "Parser/ASTFunction.h"
@@ -133,13 +134,18 @@ ASTIdentifierList getFilterColumnsFunctions(ASTPtr as) {
 
 bool combineColumns(ASTIdentifierList selectColumn, ASTIdentifierList whereColumn, ASTIdentifierList &res) {
     bool combined = false;
-    std::set<std::string> selectColumnSet;
+    std::set<std::string> selectColNameSet;
+    std::set<std::string> selectColAliasSet;
     for (auto &a: selectColumn) {
-        selectColumnSet.insert(a->shortName());
+        selectColNameSet.insert(a->shortName());
+        if (!a->alias.empty()) {
+            selectColAliasSet.insert(a->alias);
+        }
         res.push_back(a);
     }
     for (auto &a : whereColumn) {
-        if (selectColumnSet.find(a->shortName()) == selectColumnSet.end()) {
+        if (selectColNameSet.find(a->shortName()) == selectColNameSet.end() &&
+            selectColAliasSet.find(a->shortName()) == selectColAliasSet.end() ) {
             res.push_back(a);
             combined = true;
         }
@@ -162,6 +168,8 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
 
     auto groupBy = getGroupByColumns(selectColumns, selectQuery->groupBy());
 
+    auto limit = selectQuery->limitLength();
+
     BlockStreamPtr outputStream = SelectStep(allColumns, table);
 
     if (where) {
@@ -173,6 +181,10 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
 
     if (!groupBy.empty()) {
         outputStream = GroupByStep(outputStream, agrFunc, groupBy);
+    }
+
+    if(limit) {
+        outputStream = LimitStep(outputStream, limit);
     }
 
     return outputStream;
