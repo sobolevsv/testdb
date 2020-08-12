@@ -58,7 +58,7 @@ LIMIT
 
 run following curl
   
-```shell script
+```
 curl --location --request GET 'http://localhost:8080/query?sql=%20SELECT%0A%20%20count(*)%20%60donors__count%60FROM%0A%20%20test.donors%20AS%20%60donors%60WHERE%0A%20%20(%60donors%60.%22Donor%20City%22%20%3D%20%22San%20Francisco%22)%0ALIMIT%0A%20%2010000%0A'
 ```
 
