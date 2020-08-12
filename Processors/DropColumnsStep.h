@@ -4,14 +4,9 @@
 #include <Parser/ASTIdentifier.h>
 #include "DataStreams/Block.h"
 
-// drop unneeded columns
-BlockStreamPtr DropColumnsStep(BlockStreamPtr in, ASTIdentifierList columns) {
+// drop temporary  columns created for filtering and aggregation
+BlockStreamPtr DropTmpColumnsStep(BlockStreamPtr in) {
     BlockStreamPtr out = std::make_shared<BlockStream>();
-
-    std::set<std::string> outColumnSet;
-    for (auto &a: columns) {
-        outColumnSet.insert(a->shortName());
-    }
 
     while (*in) {
         auto block = in->pop();
@@ -21,7 +16,7 @@ BlockStreamPtr DropColumnsStep(BlockStreamPtr in, ASTIdentifierList columns) {
         auto outBlock = std::make_shared<Block>();
 
         for (auto &a : block->columns) {
-            if (outColumnSet.find(a->columnName) != outColumnSet.end()) {
+            if (!a->tmp) {
                 outBlock->columns.push_back(a);
             }
         }

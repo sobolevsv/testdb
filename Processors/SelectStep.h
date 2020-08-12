@@ -24,7 +24,7 @@ ColumnList makeColumnList(ASTIdentifierList columnsName) {
     return res;
 }
 
-BlockStreamPtr SelectStep(ASTIdentifierList columnsName, ASTIdentifierPtr table) {
+BlockStreamPtr SelectStep(ColumnList& columnsList, ASTIdentifierPtr table) {
 
     BlockStreamPtr out = std::make_shared<BlockStream>();
 
@@ -39,7 +39,7 @@ BlockStreamPtr SelectStep(ASTIdentifierList columnsName, ASTIdentifierPtr table)
         throw Exception("table " + table->shortName() + " does not exist");
     }
 
-    if (columnsName.empty()) {
+    if (columnsList.empty()) {
         throw Exception("empty column list in select expression");
     }
 
@@ -47,20 +47,20 @@ BlockStreamPtr SelectStep(ASTIdentifierList columnsName, ASTIdentifierPtr table)
     std::vector<std::ifstream> colFiles;
     std::vector<std::string> rowValues;
 
-    for (auto col: columnsName) {
-        if(col->compound() && col->firstComponentName() != table->shortName() && col->firstComponentName() != table->alias ) {
-            throw Exception("unknown schema in column '" + col->name + "'");
+    for (auto col: columnsList) {
+        if(col->astElem->compound() && col->astElem->firstComponentName() != table->shortName() && col->astElem->firstComponentName() != table->alias ) {
+            throw Exception("unknown schema in column '" + col->astElem->name + "'");
         }
-        std::string fileName = tablePath + col->shortName();
+        std::string fileName = tablePath + col->astElem->shortName();
         if(!std::filesystem::exists(fileName)) {
-            throw Exception("column '" + col->name + "' does not exist");
+            throw Exception("column '" + col->astElem->name + "' does not exist");
         }
         std::ifstream colFile(fileName, std::ofstream::binary);
         colFiles.push_back(std::move(colFile));
     }
 
     BlockPtr block = std::make_shared<Block>();
-    block->columns = makeColumnList(columnsName);
+    block->columns = columnsList;
     std::list<Column> columns;
 
     bool stopReading = false;

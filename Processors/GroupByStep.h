@@ -21,13 +21,13 @@ struct AggregationResultRow{
 //      select "Donor State" State, "Donor Zip" Zip, count(*), count(*) as count2 from donors_1 group by 1,Zip;
 //      select "Donor State" State, "Donor Zip" Zip, count(*) from donors_1 group by 1,2;
 
-BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIdentifierList groupByColumns) {
+BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ColumnList groupByColumns) {
     BlockStreamPtr out = std::make_shared<BlockStream>();
 
     std::set<std::string> outColumnSet;
 
     for (auto &a: groupByColumns) {
-        outColumnSet.insert(a->shortName());
+        outColumnSet.insert(a->columnName);
     }
 
     auto agrColumnPtr = std::make_shared<Column>();
@@ -46,7 +46,7 @@ BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIde
         lastBlock = cloneBlockWithoutData(block);
 
         for (auto &a : block->columns) {
-            if (outColumnSet.find(a->columnName) == outColumnSet.end() &&
+            if ( !a->tmp && outColumnSet.find(a->columnName) == outColumnSet.end() &&
                 outColumnSet.find(a->alias) == outColumnSet.end()) {
                 throw Exception(" Column `" + a->columnName + "` is not in GROUP BY");
             }
@@ -57,6 +57,8 @@ BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIde
         for (int i = 0; i < numRows; ++i) {
             std::string key;
             for (auto &col : block->columns) {
+                if(col->tmp)
+                    continue;
                 key += boost::get<std::string>(col->data[i]);
             }
             for (int j = 0; j < aggrFunctions.size(); ++j) {

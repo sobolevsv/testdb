@@ -19,17 +19,33 @@ void Server::processQueryRequest(const httplib::Request& req, httplib::Response&
     BlockStreamPtr out;
 
     try {
+        bool queryFound = false;
         for(auto  &a : req.params) {
             if (a.first == "sql") {
+                queryFound = true;
                 out = executeQuery(a.second);
                 break;
             }
+        }
+        if(!queryFound) {
+            const auto errMsg = "wrong request; expected /query?sql= SELECT ...";
+            std::cerr  << std::endl;
+            res.set_content( errMsg, "text/plain");
+            res.status = 400;
+            return;
         }
     }
     catch (const Exception & err) {
         std::cerr << err.what() << std::endl;
         res.set_content( err.what(), "text/plain");
         res.status = 400;
+        return;
+    }
+
+    if(!out) {
+        std::cerr << "internal error: output stream is nil"  << std::endl;
+        res.set_content( "internal error", "text/plain");
+        res.status = 500;
         return;
     }
 

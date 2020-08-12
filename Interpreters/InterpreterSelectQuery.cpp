@@ -45,29 +45,30 @@ std::ostream &operator<<(std::ostream &os, const ASTFunctionPtr &as) {
     return os;
 }
 
-ASTIdentifierList getColumns(ASTPtr as) {
-    ASTIdentifierList columns;
+ColumnList getColumns(ASTPtr as) {
+    ColumnList columns;
     for (auto a: as->children) {
-        auto column = std::dynamic_pointer_cast<ASTIdentifier>(a);
-        if (column) {
-            columns.push_back(column);
+        auto columnIdent = std::dynamic_pointer_cast<ASTIdentifier>(a);
+        if (columnIdent) {
+            auto columnPtr = makeColumnFromASTColumn(columnIdent);
+            columns.push_back(columnPtr);
             continue;
         }
     }
     return columns;
 }
 
-ASTIdentifierList getGroupByColumns(ASTIdentifierList selectColumn, ASTPtr groupby) {
-    ASTIdentifierList columns;
+ColumnList getGroupByColumns(ColumnList selectColumn, ASTPtr groupby) {
+    ColumnList columns;
     if (!groupby)
         return columns;
     for (auto a: groupby->children) {
-        auto column = std::dynamic_pointer_cast<ASTIdentifier>(a);
-        if (column) {
-            columns.push_back(column);
+        auto astColumn = std::dynamic_pointer_cast<ASTIdentifier>(a);
+        if (astColumn) {
+            auto columnPtr = makeColumnFromASTColumn(astColumn);
+            columns.push_back(columnPtr);
             continue;
         }
-
         // check if column specified by number
         auto literal = std::dynamic_pointer_cast<ASTLiteral>(a);
         if (literal) {
@@ -124,39 +125,41 @@ ASTFunctionPtr getFilterFunctions(ASTPtr as) {
     return function;
 }
 
-ASTIdentifierList getFilterColumnsFunctions(ASTPtr as) {
-    ASTIdentifierList columns;
+ColumnList getFilterColumnsFunctions(ASTPtr as) {
+    ColumnList columns;
     auto function = std::dynamic_pointer_cast<ASTFunction>(as);
     if (function) {
-        for (auto arg : function->arguments->children) {
-            auto column = std::dynamic_pointer_cast<ASTIdentifier>(arg);
-            if (column) {
-                columns.push_back(column);
-            }
+        if (function->arguments->children.size() != 2) {
+            throw Exception("wrong expression in WHERE ");
+        }
+        auto ASTColumn = std::dynamic_pointer_cast<ASTIdentifier>(function->arguments->children[0]);
+        if (ASTColumn) {
+            auto columnPtr = makeColumnFromASTColumn(ASTColumn);
+            columns.push_back(columnPtr);
         }
     }
     return columns;
 }
 
-bool combineColumns(ASTIdentifierList selectColumn, ASTIdentifierList whereColumn, ASTIdentifierList &res) {
-    bool combined = false;
+ColumnList combineColumns(ColumnList selectColumn, ColumnList whereColumn) {
+    ColumnList res;
     std::set<std::string> selectColNameSet;
     std::set<std::string> selectColAliasSet;
     for (auto &a: selectColumn) {
-        selectColNameSet.insert(a->shortName());
+        selectColNameSet.insert(a->columnName);
         if (!a->alias.empty()) {
             selectColAliasSet.insert(a->alias);
         }
         res.push_back(a);
     }
     for (auto &a : whereColumn) {
-        if (selectColNameSet.find(a->shortName()) == selectColNameSet.end() &&
-            selectColAliasSet.find(a->shortName()) == selectColAliasSet.end()) {
+        if (selectColNameSet.find(a->columnName) == selectColNameSet.end() &&
+            selectColAliasSet.find(a->columnName) == selectColAliasSet.end()) {
+            a->tmp = true;
             res.push_back(a);
-            combined = true;
         }
     }
-    return combined;
+    return res;
 }
 
 
@@ -166,9 +169,8 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
     auto agrFunc = getAgrFunctions(selectQuery->select());
 
     auto where = getFilterFunctions(selectQuery->where());
-    auto whereColumns = getFilterColumnsFunctions(selectQuery->where());
-    ASTIdentifierList allColumns;
-    bool combined = combineColumns(selectColumns, whereColumns, allColumns);
+    auto whereColumns = getFilterColumnsFunctions(where);
+    ColumnList allColumns =  combineColumns(selectColumns, whereColumns);
 
     auto table = getTables(selectQuery->tables());
 
@@ -182,13 +184,14 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
 
     if (where) {
         outputStream = FilterStep(outputStream, where);
-        if (combined) {
-            outputStream = DropColumnsStep(outputStream, selectColumns);
-        }
     }
 
     if (!agrFunc.empty()) {
         outputStream = GroupByStep(outputStream, agrFunc, groupBy);
+    }
+
+    if (where || !agrFunc.empty()) {
+        outputStream = DropTmpColumnsStep(outputStream);
     }
 
     if (orderBy) {
