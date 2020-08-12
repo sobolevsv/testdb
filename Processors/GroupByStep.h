@@ -6,34 +6,37 @@
 #include <map>
 
 struct AggregationResultRow{
-    std::vector<std::string> columnValues;
+    std::vector<std::string> rowValues;
 
     using AggrFuncName = std::string;
-    std::map<AggrFuncName, int64_t> functionsResults;
+    std::map<AggrFuncName, int64_t> rowAggrResults;
 };
 
-// only count(*) implemented, but could be many count(*)
+
+// only count(*) implemented, but count can be used many times in a select expression
+// for example:
+//      select "Donor State" State, count(*), count(*) as count2 from donors_1  group by State;
+// Group By column may be specified by name or index
+//      select "Donor State" State, "Donor Zip" Zip, count(*) from donors_1 group by State,Zip;
+//      select "Donor State" State, "Donor Zip" Zip, count(*), count(*) as count2 from donors_1 group by 1,Zip;
+//      select "Donor State" State, "Donor Zip" Zip, count(*) from donors_1 group by 1,2;
+
 BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIdentifierList groupByColumns) {
     BlockStreamPtr out = std::make_shared<BlockStream>();
 
     std::set<std::string> outColumnSet;
+
     for (auto &a: groupByColumns) {
         outColumnSet.insert(a->shortName());
     }
 
     auto agrColumnPtr = std::make_shared<Column>();
 
-    //using RowValues = std::vector<std::string>;
-    //using AggrValue = int64_t;
-
-//    using AggrFunctionsResults = std::map<AggrFuncName, AggrValue>;
     using rowKey = std::string;
 
     std::unordered_map<rowKey, AggregationResultRow> results;
 
-    //std::vector<aggrFunctionResult> aggrResults(aggrFunctions.size());
-
-    BlockPtr lastBlock; // for template
+    BlockPtr lastBlock; // template for output block
 
     while (*in) {
         auto block = in->pop();
@@ -59,7 +62,7 @@ BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIde
             for (int j = 0; j < aggrFunctions.size(); ++j) {
                 auto it = results.find(key);
                 if (it != results.end()) {
-                    for( auto &functionResults : it->second.functionsResults) {
+                    for( auto &functionResults : it->second.rowAggrResults) {
                         if(functionResults.first == "count") {
                             functionResults.second++;
                         }
@@ -68,11 +71,11 @@ BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIde
                     AggregationResultRow functionsResults;
                     std::vector<std::string> columnValues;
                     for (auto &col : block->columns) {
-                        functionsResults.columnValues.push_back(col->data[i]);
+                        functionsResults.rowValues.push_back(col->data[i]);
                     }
                     for (auto & f : aggrFunctions) {
                         if(f->name == "count") {
-                            functionsResults.functionsResults[f->name]++;
+                            functionsResults.rowAggrResults[f->name]++;
                         }
                     }
                     results[key] = functionsResults;
@@ -89,21 +92,17 @@ BlockStreamPtr GroupByStep(BlockStreamPtr in, functionList aggrFunctions, ASTIde
     }
 
     for (auto &res : results) {
-        for (int i = 0; i < res.second.columnValues.size(); ++i) {
-            lastBlock->columns[i]->data.push_back(res.second.columnValues[i]);
+        for (int i = 0; i < res.second.rowValues.size(); ++i) {
+            lastBlock->columns[i]->data.push_back(res.second.rowValues[i]);
         }
         for (int i = 0; i < aggrFunctions.size(); ++i) {
-            //lastBlock->columns[i]->data.push_back(res.second.columnValues[i]);
-            auto funcRes = res.second.functionsResults[aggrFunctions[i]->name];
-            lastBlock->columns[res.second.columnValues.size() + i]->data.push_back( std::to_string(funcRes));
-            //lastBlock->columns[res.second.second.size() + i]->data.push_back(res.second.first[""]);
+            auto funcRes = res.second.rowAggrResults[aggrFunctions[i]->name];
+            lastBlock->columns[res.second.rowValues.size() + i]->data.push_back(std::to_string(funcRes));
         }
     }
 
     out->push(lastBlock);
     out->close();
-
-    return out;
 
     return out;
 }

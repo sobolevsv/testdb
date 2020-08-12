@@ -42,13 +42,37 @@ std::ostream &operator<<(std::ostream &os, const ASTFunctionPtr &as) {
     return os;
 }
 
-
 ASTIdentifierList getColumns(ASTPtr as) {
     ASTIdentifierList columns;
     for (auto a: as->children) {
         auto column = std::dynamic_pointer_cast<ASTIdentifier>(a);
         if (column) {
             columns.push_back(column);
+            continue;
+        }
+    }
+    return columns;
+}
+
+ASTIdentifierList getGroupByColumns(ASTIdentifierList selectColumn, ASTPtr groupby) {
+    ASTIdentifierList columns;
+    for (auto a: groupby->children) {
+        auto column = std::dynamic_pointer_cast<ASTIdentifier>(a);
+        if (column) {
+            columns.push_back(column);
+            continue;
+        }
+
+        // check if column specified by number
+        auto literal = std::dynamic_pointer_cast<ASTLiteral>(a);
+        if (literal) {
+            if (isInt64FieldType(literal->value.getType())) {
+                int index = literal->value.get<int>() - 1; // 1-based index
+                if( index >= 0 && index < selectColumn.size()) {
+                    columns.push_back(selectColumn[index]);
+                }
+            }
+            continue;
         }
     }
     return columns;
@@ -135,7 +159,8 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
     bool combined = combineColumns(selectColumns, whereColumns, allColumns);
 
     auto table = getTables(selectQuery->tables());
-    auto groupBy = selectQuery->groupBy();
+
+    auto groupBy = getGroupByColumns(selectColumns, selectQuery->groupBy());
 
     BlockStreamPtr outputStream = SelectStep(allColumns, table);
 
@@ -146,8 +171,8 @@ BlockStreamPtr InterpreterSelectQuery::execute(ASTPtr as) {
         }
     }
 
-    if (groupBy) {
-        outputStream = GroupByStep(outputStream, agrFunc, getColumns(groupBy));
+    if (!groupBy.empty()) {
+        outputStream = GroupByStep(outputStream, agrFunc, groupBy);
     }
 
     return outputStream;
