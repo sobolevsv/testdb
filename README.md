@@ -1,14 +1,20 @@
-#### Build on linux
+#### Build on Ubuntu
 #### Install cmake
 
 ```
 sudo apt-get install cmake
 ```
 
+if GCC 9 not installed, install also it
+
+```
+apt-get install gcc-9 g++-9
+```
+
 Build
 
 ```
-cd columndb
+cd testdb
 mkdir build
 cd build
 cmake ..
