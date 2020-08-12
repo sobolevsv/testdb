@@ -27,6 +27,7 @@ protected:
 };
 
 using ASTFunctionPtr = std::shared_ptr<ASTFunction>;
+using functionList = std::vector<ASTFunctionPtr>;
 
 
 template <typename... Args>

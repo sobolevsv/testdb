@@ -44,11 +44,9 @@ BlockPtr FilterBlock(BlockPtr blockIn, ASTFunctionPtr filter ){
         if(blockIn->columns[filterColumnIndex]->data[i] != filterStrValue){
             continue;
         }
-
         for (int j = 0; j < blockIn->columns.size(); ++j) {
             blockOut->columns[j]->data.push_back(blockIn->columns[j]->data[i]);
         }
-
         for (int i = 0; i < rowValues.size(); ++i) {
             blockOut->columns[i]->data.push_back(rowValues[i]);
         }
