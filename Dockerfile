@@ -11,7 +11,7 @@ WORKDIR /build
 
 COPY . .
 
-RUN cmake .
+RUN cmake -DCMAKE_BUILD_TYPE=Release .
 RUN make
 
 ENTRYPOINT ["./columndb"]
