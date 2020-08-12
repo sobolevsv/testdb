@@ -5,7 +5,7 @@
 sudo apt-get install cmake
 ```
 
-if GCC 9 not installed, install also it
+if GCC 9 is not installed, install it
 
 ```
 apt-get install gcc-9 g++-9
