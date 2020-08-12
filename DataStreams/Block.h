@@ -6,7 +6,6 @@
 
 struct Block
 {
-    const int BLOCK_SIZE = 10; // сколько строк в колонках блока
     ColumnList columns;
 };
 
