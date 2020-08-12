@@ -64,13 +64,10 @@ void Server::processQueryRequest(const httplib::Request& req, httplib::Response&
                 auto colName = curCol->alias.empty() ? curCol->columnName : curCol->alias;
                 if (!first) {
                     ss <<  ',';
-                    std::cout <<  ',';
                 }
-                std::cout << colName;
                 ss << colName;
                 first = false;
             }
-            std::cout << std::endl;
             ss << std::endl;
 
             // print columns data
@@ -78,14 +75,11 @@ void Server::processQueryRequest(const httplib::Request& req, httplib::Response&
                 first = true;
                 for (const auto & col : block->columns) {
                     if (!first) {
-                        std::cout << ',';
                         ss << ',';
                     }
-                    std::cout << col->data[i];
                     ss << col->data[i];
                     first = false;
                 }
-                std::cout << std::endl;
                 ss << std::endl;
             }
         }

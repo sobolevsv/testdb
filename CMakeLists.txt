@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.10)
 project(columndb)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -17,5 +17,5 @@ target_include_directories(columndb PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-target_link_libraries(columndb PRIVATE Threads::Threads)
-
+find_package(Boost 1.65 REQUIRED program_options)
+target_link_libraries(columndb PRIVATE Threads::Threads ${Boost_LIBRARIES})
